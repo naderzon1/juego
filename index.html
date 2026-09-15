@@ -36,6 +36,8 @@
                 0 5px 20px rgba(0,0,0,0.15);
 
             text-align: center;
+
+            width: 380px;
         }
 
         h1 {
@@ -48,6 +50,53 @@
             font-weight: bold;
 
             margin-bottom: 20px;
+        }
+
+        .marcador {
+
+            display: flex;
+
+            gap: 10px;
+
+            margin-bottom: 20px;
+        }
+
+        .marcador div {
+
+            flex: 1;
+
+            background: #f5f5f5;
+
+            border-radius: 10px;
+
+            padding: 10px 5px;
+
+            font-size: 13px;
+
+            font-weight: bold;
+
+            color: #666;
+        }
+
+        .marcador b {
+
+            display: block;
+
+            font-size: 24px;
+
+            margin-top: 4px;
+        }
+
+        .marcador .jugador b {
+            color: #e74c3c;
+        }
+
+        .marcador .maquina b {
+            color: #3498db;
+        }
+
+        .marcador .empate b {
+            color: #555;
         }
 
         .tablero {
@@ -80,6 +129,12 @@
             cursor: pointer;
 
             transition: 0.15s;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
         }
 
         .casilla:hover {
@@ -94,33 +149,121 @@
             cursor: default;
         }
 
+        .equis {
+
+            color: #e74c3c;
+        }
+
+        .circulo {
+
+            width: 55%;
+            height: 55%;
+
+            border-radius: 50%;
+
+            background: #3498db;
+        }
+
         .ganadora {
 
             background: #8ee68e !important;
         }
 
-        #reiniciar {
+        .acciones {
+
+            display: flex;
+
+            gap: 10px;
+
+            justify-content: center;
 
             margin-top: 25px;
 
-            padding: 12px 25px;
+            flex-wrap: wrap;
+        }
 
-            font-size: 17px;
+        #reiniciar, #borrarHistorial {
+
+            padding: 12px 20px;
+
+            font-size: 15px;
 
             border: none;
 
             border-radius: 8px;
-
-            background: #333;
 
             color: white;
 
             cursor: pointer;
         }
 
+        #reiniciar {
+
+            background: #333;
+        }
+
         #reiniciar:hover {
 
             background: #555;
+        }
+
+        #borrarHistorial {
+
+            background: #b33333;
+        }
+
+        #borrarHistorial:hover {
+
+            background: #d55555;
+        }
+
+        .historial {
+
+            margin-top: 20px;
+
+            text-align: left;
+
+            max-height: 150px;
+
+            overflow-y: auto;
+
+            font-size: 13px;
+
+            background: #fafafa;
+
+            border-radius: 10px;
+
+            padding: 10px 12px;
+        }
+
+        .historial h3 {
+
+            margin: 0 0 8px;
+
+            font-size: 14px;
+        }
+
+        .historial ul {
+
+            list-style: none;
+
+            margin: 0;
+
+            padding: 0;
+        }
+
+        .historial li {
+
+            padding: 4px 0;
+
+            border-bottom: 1px solid #eee;
+
+            color: #444;
+        }
+
+        .historial li:last-child {
+
+            border-bottom: none;
         }
 
     </style>
@@ -134,6 +277,25 @@
 
     <div id="estado">
         Tu turno — eres X
+    </div>
+
+    <div class="marcador">
+
+        <div class="jugador">
+            Tú (X)
+            <b id="puntajeJugador">0</b>
+        </div>
+
+        <div class="empate">
+            Empates
+            <b id="puntajeEmpates">0</b>
+        </div>
+
+        <div class="maquina">
+            Máquina (O)
+            <b id="puntajeMaquina">0</b>
+        </div>
+
     </div>
 
     <div class="tablero">
@@ -152,9 +314,25 @@
 
     </div>
 
-    <button id="reiniciar">
-        Nueva partida
-    </button>
+    <div class="acciones">
+
+        <button id="reiniciar">
+            Nueva partida
+        </button>
+
+        <button id="borrarHistorial">
+            Borrar historial
+        </button>
+
+    </div>
+
+    <div class="historial">
+
+        <h3>Historial de partidas</h3>
+
+        <ul id="listaHistorial"></ul>
+
+    </div>
 
 </div>
 
@@ -170,6 +348,10 @@
     const JUGADOR = "X";
     const MAQUINA = "O";
 
+    const CLAVE_PARTIDA = "triqui_partida";
+    const CLAVE_PUNTAJE = "triqui_puntaje";
+    const CLAVE_HISTORIAL = "triqui_historial";
+
     let tablero = [
         "", "", "",
         "", "", "",
@@ -179,6 +361,10 @@
     let juegoTerminado = false;
 
     let turnoJugador = true;
+
+    let puntaje = cargarPuntaje();
+
+    let historial = cargarHistorial();
 
 
     /*
@@ -212,6 +398,21 @@
 
     const botonReiniciar =
         document.getElementById("reiniciar");
+
+    const botonBorrarHistorial =
+        document.getElementById("borrarHistorial");
+
+    const puntajeJugadorEl =
+        document.getElementById("puntajeJugador");
+
+    const puntajeMaquinaEl =
+        document.getElementById("puntajeMaquina");
+
+    const puntajeEmpatesEl =
+        document.getElementById("puntajeEmpates");
+
+    const listaHistorial =
+        document.getElementById("listaHistorial");
 
 
     /*
@@ -266,6 +467,7 @@
             if (tableroLleno()) {
                 estado.textContent = "¡Empate!";
                 juegoTerminado = true;
+                registrarResultado("empate");
                 return;
             }
 
@@ -340,6 +542,8 @@
 
             juegoTerminado = true;
 
+            registrarResultado("empate");
+
             return;
         }
 
@@ -352,6 +556,8 @@
 
         estado.textContent =
             "Tu turno — eres X";
+
+        guardarPartida();
 
     }
 
@@ -587,12 +793,16 @@
             estado.textContent =
                 "🎉 ¡Ganaste!";
 
+            registrarResultado("jugador");
+
         }
 
         else {
 
             estado.textContent =
                 "🤖 ¡La máquina ganó!";
+
+            registrarResultado("maquina");
 
         }
 
@@ -666,9 +876,28 @@
             const posicion =
                 Number(casilla.dataset.pos);
 
+            const valor = tablero[posicion];
 
-            casilla.textContent =
-                tablero[posicion];
+
+            if (valor === JUGADOR) {
+
+                casilla.innerHTML =
+                    '<span class="equis">X</span>';
+
+            }
+
+            else if (valor === MAQUINA) {
+
+                casilla.innerHTML =
+                    '<span class="circulo"></span>';
+
+            }
+
+            else {
+
+                casilla.innerHTML = "";
+
+            }
 
 
             /*
@@ -676,9 +905,292 @@
              */
 
             casilla.disabled =
-                tablero[posicion] !== "";
+                valor !== "";
 
         });
+
+
+        guardarPartida();
+
+    }
+
+
+    /*
+     * ============================
+     * PUNTAJE (localStorage)
+     * ============================
+     */
+
+    function cargarPuntaje() {
+
+        try {
+
+            const guardado =
+                localStorage.getItem(CLAVE_PUNTAJE);
+
+            if (!guardado) {
+                return { jugador: 0, maquina: 0, empate: 0 };
+            }
+
+            return JSON.parse(guardado);
+
+        } catch (error) {
+
+            return { jugador: 0, maquina: 0, empate: 0 };
+
+        }
+
+    }
+
+
+    function guardarPuntaje() {
+
+        localStorage.setItem(
+            CLAVE_PUNTAJE,
+            JSON.stringify(puntaje)
+        );
+
+        actualizarMarcador();
+
+    }
+
+
+    function actualizarMarcador() {
+
+        puntajeJugadorEl.textContent =
+            puntaje.jugador || 0;
+
+        puntajeMaquinaEl.textContent =
+            puntaje.maquina || 0;
+
+        puntajeEmpatesEl.textContent =
+            puntaje.empate || 0;
+
+    }
+
+
+    /*
+     * ============================
+     * HISTORIAL DE PARTIDAS
+     * ============================
+     */
+
+    function cargarHistorial() {
+
+        try {
+
+            const guardado =
+                localStorage.getItem(CLAVE_HISTORIAL);
+
+            return guardado ? JSON.parse(guardado) : [];
+
+        } catch (error) {
+
+            return [];
+
+        }
+
+    }
+
+
+    function registrarResultado(tipo) {
+
+        puntaje[tipo] =
+            (puntaje[tipo] || 0) + 1;
+
+        guardarPuntaje();
+
+
+        let texto;
+
+        if (tipo === "jugador") {
+            texto = "🎉 Ganaste";
+        }
+        else if (tipo === "maquina") {
+            texto = "🤖 Ganó la máquina";
+        }
+        else {
+            texto = "🤝 Empate";
+        }
+
+
+        historial.unshift({
+            texto: texto,
+            fecha: new Date().toLocaleString()
+        });
+
+        // Guardar solo las últimas 20 partidas
+
+        historial = historial.slice(0, 20);
+
+        localStorage.setItem(
+            CLAVE_HISTORIAL,
+            JSON.stringify(historial)
+        );
+
+        renderHistorial();
+
+
+        // La partida terminó, ya no hay nada que reanudar
+
+        localStorage.removeItem(CLAVE_PARTIDA);
+
+    }
+
+
+    function renderHistorial() {
+
+        listaHistorial.innerHTML = "";
+
+
+        if (historial.length === 0) {
+
+            const li = document.createElement("li");
+
+            li.textContent =
+                "Sin partidas registradas todavía.";
+
+            listaHistorial.appendChild(li);
+
+            return;
+        }
+
+
+        historial.forEach(item => {
+
+            const li = document.createElement("li");
+
+            li.textContent =
+                item.texto + " — " + item.fecha;
+
+            listaHistorial.appendChild(li);
+
+        });
+
+    }
+
+
+    botonBorrarHistorial.addEventListener(
+        "click",
+        function() {
+
+            const confirmado = confirm(
+                "¿Borrar historial y puntaje?"
+            );
+
+            if (!confirmado) {
+                return;
+            }
+
+
+            historial = [];
+
+            puntaje = { jugador: 0, maquina: 0, empate: 0 };
+
+
+            localStorage.removeItem(CLAVE_HISTORIAL);
+
+            localStorage.removeItem(CLAVE_PUNTAJE);
+
+
+            renderHistorial();
+
+            actualizarMarcador();
+
+        }
+    );
+
+
+    /*
+     * ============================
+     * GUARDAR / CARGAR PARTIDA EN CURSO
+     * ============================
+     */
+
+    function guardarPartida() {
+
+        if (juegoTerminado) {
+            return;
+        }
+
+        localStorage.setItem(
+            CLAVE_PARTIDA,
+            JSON.stringify({
+                tablero: tablero,
+                turnoJugador: turnoJugador
+            })
+        );
+
+    }
+
+
+    function cargarPartidaGuardada() {
+
+        let guardado;
+
+        try {
+
+            guardado =
+                localStorage.getItem(CLAVE_PARTIDA);
+
+        } catch (error) {
+
+            return;
+
+        }
+
+
+        if (!guardado) {
+            return;
+        }
+
+
+        try {
+
+            const datos = JSON.parse(guardado);
+
+
+            if (
+                !Array.isArray(datos.tablero) ||
+                datos.tablero.length !== 9
+            ) {
+                return;
+            }
+
+
+            tablero = datos.tablero;
+
+            turnoJugador =
+                datos.turnoJugador !== false;
+
+            actualizarTablero();
+
+
+            if (turnoJugador) {
+
+                estado.textContent =
+                    "Tu turno — eres X";
+
+            }
+
+            else {
+
+                estado.textContent =
+                    "La máquina está pensando...";
+
+                setTimeout(() => {
+
+                    jugarMaquina();
+
+                }, 500);
+
+            }
+
+        } catch (error) {
+
+            localStorage.removeItem(CLAVE_PARTIDA);
+
+        }
 
     }
 
@@ -711,7 +1223,7 @@
 
         casillas.forEach(casilla => {
 
-            casilla.textContent = "";
+            casilla.innerHTML = "";
 
             casilla.disabled = false;
 
@@ -725,10 +1237,24 @@
         estado.textContent =
             "Tu turno — eres X";
 
+        localStorage.removeItem(CLAVE_PARTIDA);
+
     }
+
+
+    /*
+     * ============================
+     * INICIO
+     * ============================
+     */
+
+    actualizarMarcador();
+
+    renderHistorial();
+
+    cargarPartidaGuardada();
 
 </script>
 
 </body>
 </html>
-
